@@ -7,6 +7,8 @@
 <meta property="og:title" content="My Every Move Matters report card: Yoga Star!">
 <meta property="og:image" content="yoga-report-card-star.png">
 <style>
+  @font-face { font-family: Barlow; font-weight: 600; src: url(../fonts/Barlow-SemiBold.ttf); }
+  @font-face { font-family: PlexArabic; font-weight: 700; src: url(../fonts/IBMPlexSansArabic-Bold.ttf); }
   body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:#f4f0f8; color:#18518F; text-align:center; }
   main { max-width:560px; margin:0 auto; padding:24px 16px 40px; }
   h1 { font-size:1.6rem; margin:8px 0 16px; }
@@ -20,16 +22,61 @@
 <main>
   <h1>Your report card is ready: Yoga Star!</h1>
   <h1 dir="rtl" lang="ar">بطاقة تقريرك جاهزة: نجم اليوغا!</h1>
-  <img src="yoga-report-card-star.png" alt="Yoga Star report card">
+  <img id="card" src="yoga-report-card-star.png" alt="Yoga Star report card">
   <a class="btn" id="dl" href="yoga-report-card-star.png" download="yoga-report-card-star.png">Download / تحميل</a>
   <p class="hint">On iPhone: tap and hold the picture, then choose <b>Save to Photos</b>.</p>
   <p class="hint" dir="rtl" lang="ar">على آيفون: اضغط مطولا على الصورة ثم اختر <b>حفظ في الصور</b>.</p>
 </main>
 <script>
-  // start the download automatically (Android / desktop); iOS shows its own download prompt or the image
-  window.addEventListener('load', function () {
-    setTimeout(function () { document.getElementById('dl').click(); }, 400);
-  });
+(function () {
+  // The player's name comes after '#' in the link from the game (#n=Sara). The part after '#' stays on this phone:
+  // it is never sent to GitHub or anywhere else. The name is drawn onto the card here, so the saved picture has it.
+  var NAME_CY = 130, NAME_H = 40, NAME_MAX_W = 560;
+  function clean(s) {
+    s = (s || '').replace(/[^\p{L}\p{M} .'\u2019-]/gu, '').replace(/\s+/g, ' ').trim();
+    return s.slice(0, 20).trim();
+  }
+  var name = null;
+  try {
+    var m = /(?:^|[#&])n=([^&]*)/.exec(location.hash);
+    if (m) { var c = clean(decodeURIComponent(m[1])); if (c) name = c; }
+  } catch (e) {}
+  var img = document.getElementById('card'), dl = document.getElementById('dl');
+  if (!name) {
+    // no name on the link: start the download automatically (Android / desktop); iOS shows its own prompt
+    window.addEventListener('load', function () { setTimeout(function () { dl.click(); }, 400); });
+    return;
+  }
+  var isAr = /[\u0600-\u06FF]/.test(name);
+  var file = 'yoga-report-card-star.png';
+  var base = new Image();
+  base.onload = function () {
+    var fonts = document.fonts ? Promise.all([document.fonts.load('600 30px Barlow'), document.fonts.load('700 30px PlexArabic')]) : Promise.resolve();
+    fonts.catch(function () {}).then(function () {
+      var cv = document.createElement('canvas'); cv.width = base.naturalWidth; cv.height = base.naturalHeight;
+      var g = cv.getContext('2d');
+      g.drawImage(base, 0, 0);
+      var size = 30, family = isAr ? 'PlexArabic' : 'Barlow', weight = isAr ? 700 : 600;
+      g.font = weight + ' ' + size + 'px ' + family + ', sans-serif';
+      while (g.measureText(name).width > NAME_MAX_W - 60 && size > 18) { size -= 2; g.font = weight + ' ' + size + 'px ' + family + ', sans-serif'; }
+      var w = Math.min(NAME_MAX_W, g.measureText(name).width + 60), x = cv.width / 2 - w / 2, y = NAME_CY - NAME_H / 2;
+      var grad = g.createLinearGradient(x, 0, x + w, 0); grad.addColorStop(0, '#9E7DB8'); grad.addColorStop(1, '#238DC1');
+      g.fillStyle = grad; g.beginPath();
+      var r = NAME_H / 2;
+      g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + NAME_H, r); g.arcTo(x + w, y + NAME_H, x, y + NAME_H, r);
+      g.arcTo(x, y + NAME_H, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); g.fill();
+      g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.direction = isAr ? 'rtl' : 'ltr';
+      g.fillText(name, cv.width / 2, NAME_CY + 2);
+      cv.toBlob(function (b) {
+        var url = URL.createObjectURL(b);
+        img.src = url; dl.href = url;
+        dl.download = file.replace('.png', '') + '-' + name.replace(/\s+/g, '-') + '.png';
+        setTimeout(function () { dl.click(); }, 400);   // start the download (Android / desktop); iOS: hold the picture
+      }, 'image/png');
+    });
+  };
+  base.src = file;
+})();
 </script>
 </body>
 </html>

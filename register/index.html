@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Every Move Matters - your name</title>
+<meta name="robots" content="noindex">
+<style>
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:linear-gradient(#f8f4fb,#eef3fa); color:#18518F; min-height:100vh; }
+  main { max-width:520px; margin:0 auto; padding:28px 20px 40px; text-align:center; }
+  .logo { width:72%; max-width:340px; margin:4px auto 18px; display:block; }
+  h1 { font-size:1.7rem; margin:6px 0 2px; }
+  form { margin-top:22px; background:#fff; border-radius:24px; padding:22px 18px; box-shadow:0 8px 30px rgba(24,81,143,.15); }
+  label { display:block; font-weight:700; margin-bottom:10px; }
+  input { width:100%; box-sizing:border-box; font-size:1.5rem; padding:14px 16px; border:2px solid #e4d7ee; border-radius:16px; color:#18518F; text-align:center; }
+  input:focus { outline:none; border-color:#9E7DB8; }
+  button { margin-top:18px; width:100%; padding:16px; border:0; border-radius:40px; background:linear-gradient(90deg,#9E7DB8,#238DC1); color:#fff; font-size:1.3rem; font-weight:700; letter-spacing:.04em; }
+  button:disabled { opacity:.5; }
+  .msg { margin-top:18px; font-size:1.15rem; font-weight:600; min-height:1.4em; }
+  .msg.err { color:#9E7DB8; }
+  .done { display:none; margin-top:26px; background:#fff; border-radius:24px; padding:28px 18px; box-shadow:0 8px 30px rgba(24,81,143,.15); }
+  .done b { font-size:2rem; display:block; margin:6px 0 10px; color:#238DC1; }
+  .small { font-size:.85rem; opacity:.75; margin-top:22px; }
+  [dir=rtl] { direction:rtl; }
+</style>
+</head>
+<body>
+<main>
+  <img class="logo" src="../brand/logo_skmc_color.png" alt="SEHA SKMC | Cincinnati Children's">
+  <h1>Every Move Matters</h1>
+  <form id="f" autocomplete="off">
+    <label for="name">What's your name?<br><span dir="rtl" lang="ar">ما اسمك؟</span></label>
+    <input id="name" name="name" maxlength="20" placeholder="Your name / اسمك" autocapitalize="words" spellcheck="false" required>
+    <button id="go" type="submit">Start / ابدأ</button>
+    <div id="msg" class="msg"></div>
+  </form>
+  <div id="done" class="done">
+    <div>Done! Look at the wall.</div>
+    <div dir="rtl" lang="ar">تم! انظر إلى الجدار.</div>
+    <b id="who"></b>
+  </div>
+  <p class="small">Your name is only used for this game and its report card.<br>
+    <span dir="rtl" lang="ar">يُستخدم اسمك فقط لهذه اللعبة وبطاقة تقريرها.</span></p>
+</main>
+<script>
+(function () {
+  // the round's key comes after '#' in the QR link (#k=...); a new key every round
+  var m = /(?:^|[#&])k=([A-Za-z0-9]{8,40})/.exec(location.hash);
+  var key = m ? m[1] : null;
+  var relay = 'https://ntfy.sh/yoga-reg-';
+  var f = document.getElementById('f'), input = document.getElementById('name'), btn = document.getElementById('go'), msg = document.getElementById('msg');
+  function say(en, ar, err) { msg.innerHTML = ''; msg.className = 'msg' + (err ? ' err' : '');
+    var a = document.createElement('div'); a.textContent = en; var b = document.createElement('div'); b.textContent = ar; b.dir = 'rtl';
+    msg.appendChild(a); msg.appendChild(b); }
+  function clean(s) { return (s || '').replace(/[^\p{L}\p{M} .'’-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 20).trim(); }
+  if (!key) { btn.disabled = true; say('Please scan the code on the screen again.', 'يرجى مسح الرمز على الشاشة مرة أخرى.', true); }
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = clean(input.value);
+    if (!name) { say('Please type a name (letters only).', 'يرجى كتابة اسم (أحرف فقط).', true); return; }
+    btn.disabled = true; say('Sending...', 'جارٍ الإرسال...');
+    fetch(relay + key, { method: 'POST', body: name })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); })
+      .then(function () { f.style.display = 'none'; document.getElementById('who').textContent = name; document.getElementById('done').style.display = 'block'; })
+      .catch(function () { btn.disabled = false; say("Couldn't send. Check the internet and try again.", 'تعذر الإرسال. تحقق من الإنترنت وحاول مرة أخرى.', true); });
+  });
+})();
+</script>
+</body>
+</html>
